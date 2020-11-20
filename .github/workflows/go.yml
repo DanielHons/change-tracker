@@ -33,6 +33,3 @@ jobs:
 
     - name: Test
       run: go test -v .
-
-    - name: Test Lib
-      run: cd jwt_exchange && go test
