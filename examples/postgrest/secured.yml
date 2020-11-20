@@ -1,0 +1,5 @@
+version: "3.7"
+services:
+  postgrest:
+    environment:
+      PGRST_JWT_SECRET: "${JWT_SECRET}"
