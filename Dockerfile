@@ -1,14 +1,14 @@
 FROM golang:1.15.0-buster as builder
 
-RUN go get github.com/dgrijalva/jwt-go
-RUN go get github.com/DanielHons/go-jwt-exchange/jwt_exchange
+COPY src /go/src/app
 WORKDIR /go/src/app
-ADD main.go main.go
+RUN go get ./...
+
 # build the source
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main main.go
 
-COPY sql/ /sql/
 FROM alpine:3.7
+COPY sql/ /sql/
 WORKDIR /root
 
 ENV BIND_ADDRESS "0.0.0.0:8080"
