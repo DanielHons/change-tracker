@@ -172,6 +172,9 @@ func getDiff(base string, compare string) (string, error) {
 	row := db.QueryRow(sqlStatement, base, compare)
 	var json string
 	err = row.Scan(&json)
+	if err != nil {
+		return "[]", nil
+	}
 	return json, err
 
 }

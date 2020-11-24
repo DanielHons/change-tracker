@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-docker-compose -f examples/postgrest/env.yml  kill -s SIGUSR1 postgrest
+docker-compose -f examples/postgrest/docker-compose.yml  kill -s SIGUSR1 postgrest
