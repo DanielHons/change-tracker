@@ -26,7 +26,9 @@ jobs:
         go get ./...
 
     - name: Build
-      run: go build -v src
+      run: |
+        ls
+        go build -v .
 
     - name: Test
-      run: go test -v src
+      run: go test -v .
