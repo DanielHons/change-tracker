@@ -27,8 +27,19 @@ type StageNotification struct {
 	Sha       string `json:"sha"`
 }
 
+type MultiStageNotification struct {
+	Component string   `json:"component"`
+	Stages    []string `json:"stages"`
+	Version   string   `json:"version"`
+	Sha       string   `json:"sha"`
+}
+
 func (n StageNotification) IsValid() bool {
 	return len(n.Component) > 0 && len(n.Stage) > 0 && len(n.Sha) > 0
+}
+
+func (n MultiStageNotification) IsValid() bool {
+	return len(n.Component) > 0 && len(n.Stages) > 0 && len(n.Sha) > 0
 }
 
 type DiffRequest struct {
@@ -67,7 +78,8 @@ func main() {
 	jwksCache.ReloadJwks()
 
 	http.HandleFunc("/overview/api/diff", secured(overviewApi(), &jwksCache))
-	http.HandleFunc("/notify", acceptNptification())
+	http.HandleFunc("/notify/single", receiveSingleStageNotification())
+	http.HandleFunc("/notify/multi", receiveMultiStageNotification())
 	log.Fatal(http.ListenAndServe(os.Getenv("BIND_ADDRESS"), nil))
 }
 
@@ -116,35 +128,79 @@ func secured(handler func(w http.ResponseWriter, r *http.Request), validator jwt
 	}
 }
 
-func acceptNptification() func(w http.ResponseWriter, r *http.Request) {
+func receiveSingleStageNotification() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get(os.Getenv(envVarTokenHeaderIn)) == os.Getenv(envVarApiToken) {
-			if r.Method == http.MethodPost {
-				// Declare a new Person struct.
-				var p StageNotification
+		receiveNotification(w, r, processSingleStageNotification)
+	}
+}
 
-				// Try to decode the request body into the struct. If there is an error,
-				// respond to the client with the error message and a 400 status code.
-				err := json.NewDecoder(r.Body).Decode(&p)
-				if err != nil {
-					http.Error(w, err.Error(), http.StatusBadRequest)
-					return
-				}
-				if p.IsValid() {
-					insert(p)
-					w.WriteHeader(http.StatusCreated)
-				} else {
-					w.WriteHeader(http.StatusBadRequest)
-					_, _ = w.Write([]byte("Invalid Argument"))
-				}
+func receiveMultiStageNotification() func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		receiveNotification(w, r, processMultiStageNotification)
+	}
+}
 
-			} else {
-				w.WriteHeader(http.StatusMethodNotAllowed)
-			}
+func processSingleStageNotification(w http.ResponseWriter, r *http.Request) {
+	var p StageNotification
+	// Try to decode the request body into the struct. If there is an error,
+	// respond to the client with the error message and a 400 status code.
+	err := json.NewDecoder(r.Body).Decode(&p)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if p.IsValid() {
+		insert(p)
+		w.WriteHeader(http.StatusCreated)
+	} else {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte("Invalid Argument"))
+	}
+}
+
+func processMultiStageNotification(w http.ResponseWriter, r *http.Request) {
+	var p MultiStageNotification
+	// Try to decode the request body into the struct. If there is an error,
+	// respond to the client with the error message and a 400 status code.
+	err := json.NewDecoder(r.Body).Decode(&p)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if p.IsValid() {
+		for _, n := range expand(p) {
+			insert(n)
+
+		}
+		w.WriteHeader(http.StatusCreated)
+	} else {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte("Invalid Argument"))
+	}
+}
+
+// Notification calls are always POST with the static token required
+func receiveNotification(w http.ResponseWriter, r *http.Request, notificationHandler func(w http.ResponseWriter, r *http.Request)) {
+	if r.Header.Get(os.Getenv(envVarTokenHeaderIn)) == os.Getenv(envVarApiToken) {
+		if r.Method == http.MethodPost {
+			notificationHandler(w, r)
 		} else {
 			w.WriteHeader(http.StatusUnauthorized)
 		}
 	}
+}
+
+func expand(m MultiStageNotification) []StageNotification {
+	var notifications []StageNotification
+	for _, stage := range m.Stages {
+		notifications = append(notifications, StageNotification{
+			Component: m.Component,
+			Stage:     stage,
+			Version:   m.Version,
+			Sha:       m.Sha,
+		})
+	}
+	return notifications
 }
 
 func insert(n StageNotification) {
