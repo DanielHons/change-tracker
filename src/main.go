@@ -185,8 +185,10 @@ func receiveNotification(w http.ResponseWriter, r *http.Request, notificationHan
 		if r.Method == http.MethodPost {
 			notificationHandler(w, r)
 		} else {
-			w.WriteHeader(http.StatusUnauthorized)
+			w.WriteHeader(http.StatusMethodNotAllowed)
 		}
+	} else {
+		w.WriteHeader(http.StatusUnauthorized)
 	}
 }
 
