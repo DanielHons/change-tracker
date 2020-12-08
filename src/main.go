@@ -205,7 +205,7 @@ func expand(m MultiStageNotification) []StageNotification {
 
 func insert(n StageNotification) {
 	sqlStatement := `
-INSERT INTO data.stages_reached_latest_versions (component_name, stage_name, version, git_sha)
+INSERT INTO stages_reached_latest_versions (component_name, stage_name, version, git_sha)
 VALUES ($1, $2, $3, $4)`
 
 	db, err := sql.Open("postgres", os.Getenv(envVarDbConnStr))
@@ -218,7 +218,7 @@ VALUES ($1, $2, $3, $4)`
 }
 
 func getDiff(base string, compare string) (string, error) {
-	sqlStatement := "select json_agg(sub) from (select * from api.diff($1,$2)) sub;"
+	sqlStatement := "select json_agg(sub) from (select * from diff($1,$2)) sub;"
 
 	db, err := sql.Open("postgres", os.Getenv(envVarDbConnStr))
 	defer db.Close()
