@@ -1,4 +1,5 @@
-create table data.stages_reached_latest_versions
+
+create table stages_reached_latest_versions
 (
     component_name varchar(200) not null,
     stage_name     varchar(200) not null,
@@ -9,7 +10,7 @@ create table data.stages_reached_latest_versions
 );
 
 
-create table data.stages_aliases
+create table stages_aliases
 (
     component_name varchar(200) not null,
     plain_stage    varchar(200) not null,
@@ -17,26 +18,26 @@ create table data.stages_aliases
     primary key (component_name, plain_stage)
 );
 
-create view data.latest_versions as
+create view latest_versions as
 select s.*, coalesce(sa.alias, s.stage_name) as stage_alias
-from data.stages_reached_latest_versions s
-         left outer join data.stages_aliases sa
+from stages_reached_latest_versions s
+         left outer join stages_aliases sa
                          on s.component_name = sa.component_name and s.stage_name = sa.plain_stage;
 
-create view data.latest_stages as
+create view latest_stages as
 select l.*
-from data.latest_versions l
-         left outer join data.latest_versions r on
+from latest_versions l
+         left outer join latest_versions r on
         r.stage_alias = l.stage_alias and r.component_name = l.component_name and r.timestamp > l.timestamp
-         left outer join data.stages_aliases sa
+         left outer join stages_aliases sa
                          on l.component_name = sa.component_name and l.stage_name = sa.plain_stage
 where r.timestamp is null;
 
 
 
 -- Can be used to find all components where the sha between stages differs like
--- select * from api.diff('prod','develop');
-CREATE OR REPLACE FUNCTION api.diff(base text, compare text)
+-- select * from diff('prod','develop');
+CREATE OR REPLACE FUNCTION diff(base text, compare text)
     RETURNS TABLE
             (
                 component_name varchar,
@@ -50,8 +51,8 @@ $func$
 BEGIN
 
     RETURN QUERY select lsa.component_name, lsa.git_sha,lsa.version, lsb.git_sha, lsb.version as present
-                 from data.latest_stages lsa
-                          left outer join data.latest_stages lsb on lsa.component_name = lsb.component_name
+                 from latest_stages lsa
+                          left outer join latest_stages lsb on lsa.component_name = lsb.component_name
                      and lsb.stage_alias = base and lsa.stage_alias = compare
                  where lsa.stage_alias = compare and lsb.stage_name is null
                     or (lsb.stage_alias = base and lsb.git_sha != lsa.git_sha);

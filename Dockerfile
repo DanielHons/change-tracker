@@ -15,7 +15,7 @@ ENV BIND_ADDRESS "0.0.0.0:8080"
 ENV TOKEN_HEADER_IN "Authorization"
 ENV DATABASE_CONNECTION_STRING "postgres://user:password@localhost:5432/postgres"
 ENV JWKS_URL ""
-ENV MIGRATION_FILES="/sql"
+ENV MIGRATION_FILES="/sql/schema"
 
 # copy the binary from builder
 COPY --from=builder /go/src/app/main .

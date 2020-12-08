@@ -6,8 +6,7 @@ create user anonymous nologin;
 
 grant anonymous to authenticator;
 
-create schema api;
-create schema data;
+
 alter schema data owner to migration_user;
 alter schema api owner to migration_user;
 
