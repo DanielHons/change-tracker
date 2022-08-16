@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"github.com/DanielHons/change-tracker/migrate"
-	"github.com/DanielHons/go-jwt-exchange/jwt_exchange"
+	"github.com/DanielHons/go-jwt-exchange/pkg/jwt_exchange"
 	"log"
 	"net/http"
 	"os"
@@ -71,11 +71,10 @@ func main() {
 	})
 
 	// Run proxy
-	jwksCache := jwt_exchange.JwksCache{
-		JwksUrl:             os.Getenv("JWKS_URL"),
-		JwksRefreshInterval: 24 * time.Hour,
-	}
-	jwksCache.ReloadJwks()
+	jwksCache := jwt_exchange.StartNewJwkCache(
+		os.Getenv("JWKS_URL"),
+		24*time.Hour,
+		false)
 
 	http.HandleFunc("/overview/api/diff", secured(overviewApi(), &jwksCache))
 	http.HandleFunc("/notify/single", receiveSingleStageNotification())
