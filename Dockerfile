@@ -1,20 +1,21 @@
 FROM golang:1.15.0-buster as builder
-RUN go get github.com/dgrijalva/jwt-go
-RUN go get github.com/DanielHons/go-jwt-exchange/jwt_exchange
+
+COPY src /go/src/app
 WORKDIR /go/src/app
-ADD main.go main.go
+RUN go get ./...
+
 # build the source
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main main.go
 
-# use a minimal alpine image
 FROM alpine:3.7
-# add ca-certificates in case you need them
-#RUN apk update && apk add ca-certificates && rm -rf /var/cache/apk/*
-# set working directory
+COPY sql/ /sql/
 WORKDIR /root
 
-ENV PORT 8082
-ENV SERVICE_URL http://localhost:8082
+ENV BIND_ADDRESS "0.0.0.0:8080"
+ENV TOKEN_HEADER_IN "Authorization"
+ENV DATABASE_CONNECTION_STRING "postgres://user:password@localhost:5432/postgres"
+ENV JWKS_URL ""
+ENV MIGRATION_FILES="/sql/schema"
 
 # copy the binary from builder
 COPY --from=builder /go/src/app/main .
