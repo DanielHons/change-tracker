@@ -1,6 +1,6 @@
 module github.com/DanielHons/change-tracker
 
-go 1.15
+go 1.18
 
 require (
 	github.com/DanielHons/go-jwt-exchange v1.0.0
